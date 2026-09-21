@@ -1,0 +1,206 @@
+name: Build ChatGPT Community Unraid
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "17 */6 * * *"
+    - cron: "37 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+concurrency:
+  group: chatgpt-community-unraid
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Check upstream
+    runs-on: ubuntu-latest
+
+    outputs:
+      should_build: ${{ steps.decide.outputs.should_build }}
+      wrapper_sha: ${{ steps.state.outputs.wrapper_sha }}
+      official_version: ${{ steps.state.outputs.official_version }}
+      official_path: ${{ steps.state.outputs.official_path }}
+      official_sha256: ${{ steps.state.outputs.official_sha256 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install metadata dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gnupg jq
+
+      - name: Resolve current upstream state
+        id: state
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -rf /tmp/codex-desktop-linux
+          rm -rf /tmp/chatgpt-upstream-metadata
+
+          git clone \
+            --depth=1 \
+            https://github.com/ilysenko/codex-desktop-linux.git \
+            /tmp/codex-desktop-linux
+
+          WRAPPER_SHA="$(
+            git -C /tmp/codex-desktop-linux rev-parse HEAD
+          )"
+
+          mkdir -p /tmp/chatgpt-upstream-metadata
+
+          node \
+            /tmp/codex-desktop-linux/scripts/lib/upstream-linux-package.js \
+            --output-dir /tmp/chatgpt-upstream-metadata \
+            --metadata /tmp/chatgpt-upstream-metadata/package.json \
+            --key-base64 /tmp/codex-desktop-linux/assets/openai-codex-linux-repository-key.gpg.base64 \
+            --arch amd64 \
+            --metadata-only
+
+          OFFICIAL_VERSION="$(
+            jq -r '.version' \
+              /tmp/chatgpt-upstream-metadata/package.json
+          )"
+
+          OFFICIAL_PATH="$(
+            jq -r '.repositoryPath' \
+              /tmp/chatgpt-upstream-metadata/package.json
+          )"
+
+          OFFICIAL_SHA256="$(
+            jq -r '.sha256' \
+              /tmp/chatgpt-upstream-metadata/package.json
+          )"
+
+          jq -S -n \
+            --arg wrapper_sha "${WRAPPER_SHA}" \
+            --arg official_version "${OFFICIAL_VERSION}" \
+            --arg official_path "${OFFICIAL_PATH}" \
+            --arg official_sha256 "${OFFICIAL_SHA256}" \
+            '{
+              wrapper_sha: $wrapper_sha,
+              official_version: $official_version,
+              official_path: $official_path,
+              official_sha256: $official_sha256
+            }' \
+            > /tmp/new-upstream-state.json
+
+          if cmp -s \
+            /tmp/new-upstream-state.json \
+            upstream-state.json
+          then
+            CHANGED="false"
+          else
+            CHANGED="true"
+            cp \
+              /tmp/new-upstream-state.json \
+              upstream-state.json
+          fi
+
+          echo "changed=${CHANGED}" >> "${GITHUB_OUTPUT}"
+          echo "wrapper_sha=${WRAPPER_SHA}" >> "${GITHUB_OUTPUT}"
+          echo "official_version=${OFFICIAL_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "official_path=${OFFICIAL_PATH}" >> "${GITHUB_OUTPUT}"
+          echo "official_sha256=${OFFICIAL_SHA256}" >> "${GITHUB_OUTPUT}"
+
+      - name: Save new upstream state
+        if: steps.state.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add upstream-state.json
+
+          git commit \
+            -m "chore: update ChatGPT Community upstream"
+
+          git push origin HEAD:main
+
+      - name: Decide whether to build
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SHOULD_BUILD="false"
+
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            SHOULD_BUILD="true"
+          fi
+
+          if [ "${{ steps.state.outputs.changed }}" = "true" ]; then
+            SHOULD_BUILD="true"
+          fi
+
+          if [ "${{ github.event.schedule }}" = "37 3 * * 0" ]; then
+            SHOULD_BUILD="true"
+          fi
+
+          echo "should_build=${SHOULD_BUILD}" >> "${GITHUB_OUTPUT}"
+
+  build:
+    name: Build and publish Docker image
+    needs:
+      - prepare
+
+    if: needs.prepare.outputs.should_build == 'true'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: true
+          build-args: |
+            WRAPPER_SHA=${{ needs.prepare.outputs.wrapper_sha }}
+            OFFICIAL_VERSION=${{ needs.prepare.outputs.official_version }}
+            OFFICIAL_PATH=${{ needs.prepare.outputs.official_path }}
+            OFFICIAL_SHA256=${{ needs.prepare.outputs.official_sha256 }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/chatgpt-community-unraid:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=ChatGPT Community for Unraid with experimental Linux Remote Mobile Control
+            org.opencontainers.image.version=${{ needs.prepare.outputs.official_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
