@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+sleep 5
+
+if pgrep -u "$(id -u)" -f "/opt/codex-desktop/ChatGPT" >/dev/null 2>&1; then
+    exit 0
+fi
+
+exec /usr/bin/codex-desktop
