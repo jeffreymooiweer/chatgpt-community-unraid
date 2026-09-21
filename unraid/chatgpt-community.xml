@@ -1,100 +1,27 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Container version="2">
   <Name>ChatGPT-Community</Name>
-
   <Repository>ghcr.io/jeffreymooiweer/chatgpt-community-unraid:latest</Repository>
-
   <Registry>https://github.com/jeffreymooiweer/chatgpt-community-unraid/pkgs/container/chatgpt-community-unraid</Registry>
-
   <Network>bridge</Network>
-
   <Shell>bash</Shell>
-
   <Privileged>false</Privileged>
-
   <Support>https://github.com/jeffreymooiweer/chatgpt-community-unraid/issues</Support>
-
   <Project>https://github.com/jeffreymooiweer/chatgpt-community-unraid</Project>
-
-  <Overview>
-ChatGPT Community for Unraid.
-
-Runs the community Linux ChatGPT desktop application inside a persistent Linux desktop container.
-
-Includes experimental Linux Remote Mobile Control and SSH-based root administration of the Unraid host.
-  </Overview>
-
+  <Overview>ChatGPT Community as a single application: no XFCE desktop or taskbar. Includes experimental Remote Mobile Control, persistent credentials and root SSH access to Unraid. Optional Intel/AMD GPU acceleration. Protect the WebUI with a password and keep it on LAN/VPN.</Overview>
   <Category>Tools:</Category>
-
   <WebUI>https://[IP]:[PORT:3001]/</WebUI>
-
   <Icon>https://raw.githubusercontent.com/ilysenko/codex-desktop-linux/main/assets/codex-linux.png</Icon>
-
   <ExtraParams>--shm-size=1g --hostname=NUCRaid-ChatGPT</ExtraParams>
-
-  <Config
-    Name="WebUI HTTPS"
-    Target="3001"
-    Default="33443"
-    Mode="tcp"
-    Description="Secure Webtop desktop"
-    Type="Port"
-    Display="always"
-    Required="true"
-    Mask="false">33443</Config>
-
-  <Config
-    Name="Appdata"
-    Target="/config"
-    Default="/mnt/user/appdata/chatgpt-community"
-    Mode="rw"
-    Description="Persistent ChatGPT, Codex, SSH and Remote Control data"
-    Type="Path"
-    Display="always"
-    Required="true"
-    Mask="false">/mnt/user/appdata/chatgpt-community</Config>
-
-  <Config
-    Name="PUID"
-    Target="PUID"
-    Default="99"
-    Mode=""
-    Description="Container user ID"
-    Type="Variable"
-    Display="advanced"
-    Required="true"
-    Mask="false">99</Config>
-
-  <Config
-    Name="PGID"
-    Target="PGID"
-    Default="100"
-    Mode=""
-    Description="Container group ID"
-    Type="Variable"
-    Display="advanced"
-    Required="true"
-    Mask="false">100</Config>
-
-  <Config
-    Name="Timezone"
-    Target="TZ"
-    Default="Europe/Amsterdam"
-    Mode=""
-    Description="Container timezone"
-    Type="Variable"
-    Display="advanced"
-    Required="true"
-    Mask="false">Europe/Amsterdam</Config>
-
-  <Config
-    Name="Unraid Host"
-    Target="UNRAID_HOST"
-    Default="192.168.1.6"
-    Mode=""
-    Description="LAN address of the Unraid host"
-    Type="Variable"
-    Display="always"
-    Required="true"
-    Mask="false">192.168.1.6</Config>
+  <Config Name="WebUI HTTPS" Target="3001" Default="33443" Mode="tcp" Description="ChatGPT application over HTTPS" Type="Port" Display="always" Required="true" Mask="false">33443</Config>
+  <Config Name="Appdata" Target="/config" Default="/mnt/user/appdata/chatgpt-community" Mode="rw" Description="Keep the existing path to preserve login, pairing and SSH keys" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/chatgpt-community</Config>
+  <Config Name="GPU" Target="/dev/dri" Default="/dev/dri" Mode="" Description="Intel/AMD rendering and encoding; remove this device when the host has no /dev/dri" Type="Device" Display="always" Required="false" Mask="false">/dev/dri</Config>
+  <Config Name="WebUI username" Target="CUSTOM_USER" Default="abc" Mode="" Description="WebUI basic-auth username, unrelated to your ChatGPT account" Type="Variable" Display="always" Required="true" Mask="false">abc</Config>
+  <Config Name="WebUI password" Target="PASSWORD" Default="" Mode="" Description="Set a strong unique password; blank means no WebUI authentication" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Wayland" Target="PIXELFLUX_WAYLAND" Default="true" Mode="" Description="Use Wayland/labwc; false selects the single-app X11 fallback" Type="Variable" Display="advanced" Required="true" Mask="false">true</Config>
+  <Config Name="Stream FPS" Target="SELKIES_FRAMERATE" Default="30" Mode="" Description="Fixed stream frame-rate cap" Type="Variable" Display="advanced" Required="true" Mask="false">30</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="Container user ID; retain the existing value on upgrade" Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Container group ID; retain the existing value on upgrade" Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Timezone" Target="TZ" Default="Europe/Amsterdam" Mode="" Description="Container timezone" Type="Variable" Display="advanced" Required="true" Mask="false">Europe/Amsterdam</Config>
+  <Config Name="Unraid Host" Target="UNRAID_HOST" Default="192.168.1.6" Mode="" Description="Used when creating the initial SSH configuration; existing config is preserved" Type="Variable" Display="always" Required="true" Mask="false">192.168.1.6</Config>
 </Container>
