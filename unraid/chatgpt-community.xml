@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ChatGPT-Community</Name>
+
+  <Repository>ghcr.io/jeffreymooiweer/chatgpt-community-unraid:latest</Repository>
+
+  <Registry>https://github.com/jeffreymooiweer/chatgpt-community-unraid/pkgs/container/chatgpt-community-unraid</Registry>
+
+  <Network>bridge</Network>
+
+  <Shell>bash</Shell>
+
+  <Privileged>false</Privileged>
+
+  <Support>https://github.com/jeffreymooiweer/chatgpt-community-unraid/issues</Support>
+
+  <Project>https://github.com/jeffreymooiweer/chatgpt-community-unraid</Project>
+
+  <Overview>
+ChatGPT Community for Unraid.
+
+Runs the community Linux ChatGPT desktop application inside a persistent Linux desktop container.
+
+Includes experimental Linux Remote Mobile Control and SSH-based root administration of the Unraid host.
+  </Overview>
+
+  <Category>Tools:</Category>
+
+  <WebUI>https://[IP]:[PORT:3001]/</WebUI>
+
+  <Icon>https://raw.githubusercontent.com/ilysenko/codex-desktop-linux/main/assets/codex-linux.png</Icon>
+
+  <ExtraParams>--shm-size=1g --hostname=NUCRaid-ChatGPT</ExtraParams>
+
+  <Config
+    Name="WebUI HTTPS"
+    Target="3001"
+    Default="33443"
+    Mode="tcp"
+    Description="Secure Webtop desktop"
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">33443</Config>
+
+  <Config
+    Name="Appdata"
+    Target="/config"
+    Default="/mnt/user/appdata/chatgpt-community"
+    Mode="rw"
+    Description="Persistent ChatGPT, Codex, SSH and Remote Control data"
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/chatgpt-community</Config>
+
+  <Config
+    Name="PUID"
+    Target="PUID"
+    Default="99"
+    Mode=""
+    Description="Container user ID"
+    Type="Variable"
+    Display="advanced"
+    Required="true"
+    Mask="false">99</Config>
+
+  <Config
+    Name="PGID"
+    Target="PGID"
+    Default="100"
+    Mode=""
+    Description="Container group ID"
+    Type="Variable"
+    Display="advanced"
+    Required="true"
+    Mask="false">100</Config>
+
+  <Config
+    Name="Timezone"
+    Target="TZ"
+    Default="Europe/Amsterdam"
+    Mode=""
+    Description="Container timezone"
+    Type="Variable"
+    Display="advanced"
+    Required="true"
+    Mask="false">Europe/Amsterdam</Config>
+
+  <Config
+    Name="Unraid Host"
+    Target="UNRAID_HOST"
+    Default="192.168.1.6"
+    Mode=""
+    Description="LAN address of the Unraid host"
+    Type="Variable"
+    Display="always"
+    Required="true"
+    Mask="false">192.168.1.6</Config>
+</Container>
