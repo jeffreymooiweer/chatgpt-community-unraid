@@ -1,110 +1,98 @@
 #!/usr/bin/with-contenv bash
-
 set -euo pipefail
+umask 077
 
+CONFIG_DIR="${CHATGPT_CONFIG_DIR:-/config}"
+DEFAULTS_DIR="${CHATGPT_DEFAULTS_DIR:-/defaults}"
+APP_USER="${CHATGPT_APP_USER:-abc}"
+APP_GROUP="${CHATGPT_APP_GROUP:-abc}"
 UNRAID_HOST="${UNRAID_HOST:-192.168.1.6}"
+[[ "$UNRAID_HOST" =~ ^[a-zA-Z0-9._:-]+$ ]] || {
+    echo '[chatgpt-community] Invalid UNRAID_HOST.' >&2
+    exit 1
+}
 
-SSH_DIR="/config/.ssh"
-SSH_KEY="${SSH_DIR}/id_ed25519"
-SSH_CONFIG="${SSH_DIR}/config"
-WORKSPACE="/config/workspace/unraid"
+SSH_DIR="$CONFIG_DIR/.ssh"
+SSH_KEY="$SSH_DIR/id_ed25519"
+WORKSPACE="$CONFIG_DIR/workspace/unraid"
+BACKUP="$CONFIG_DIR/.local/state/chatgpt-community/migration-single-app-v1"
+mkdir -p "$SSH_DIR" "$WORKSPACE" "$BACKUP"
+chmod 0700 "$SSH_DIR" "$BACKUP"
+# Newly created parent directories must be traversable by the session user.
+mkdir -p "$CONFIG_DIR/.config"
+chown "$APP_USER:$APP_GROUP" "$CONFIG_DIR/.config" "$CONFIG_DIR/workspace" \
+    "$CONFIG_DIR/.local" "$CONFIG_DIR/.local/state" \
+    "$CONFIG_DIR/.local/state/chatgpt-community" "$BACKUP"
 
-mkdir -p "${SSH_DIR}"
-mkdir -p "${WORKSPACE}"
-
-chmod 0700 "${SSH_DIR}"
-
-if [ ! -f "${SSH_KEY}" ]; then
-    ssh-keygen \
-        -q \
-        -t ed25519 \
-        -N "" \
-        -C "chatgpt-community@unraid" \
-        -f "${SSH_KEY}"
+# Do not rotate an existing SSH identity or overwrite custom host aliases.
+if [ ! -f "$SSH_KEY" ]; then
+    ssh-keygen -q -t ed25519 -N '' -C chatgpt-community@unraid -f "$SSH_KEY"
 fi
-
-cat > "${SSH_CONFIG}" <<EOF
+if [ ! -s "$SSH_KEY.pub" ]; then
+    ssh-keygen -y -P '' -f "$SSH_KEY" > "$SSH_KEY.pub"
+fi
+if [ ! -e "$SSH_DIR/config" ]; then
+    cat > "$SSH_DIR/config" <<EOF
 Host unraid
-    HostName ${UNRAID_HOST}
+    HostName $UNRAID_HOST
     User root
-    IdentityFile /config/.ssh/id_ed25519
+    IdentityFile $SSH_KEY
     IdentitiesOnly yes
     StrictHostKeyChecking accept-new
     ServerAliveInterval 30
     ServerAliveCountMax 3
 EOF
+fi
+chmod 0600 "$SSH_KEY" "$SSH_DIR/config"
+chmod 0644 "$SSH_KEY.pub"
+chown "$APP_USER:$APP_GROUP" "$SSH_DIR" "$SSH_KEY" "$SSH_KEY.pub" "$SSH_DIR/config"
 
-chmod 0600 "${SSH_KEY}"
-chmod 0644 "${SSH_KEY}.pub"
-chmod 0600 "${SSH_CONFIG}"
-
-cat > "${WORKSPACE}/AGENTS.md" <<EOF
+if [ ! -e "$WORKSPACE/AGENTS.md" ]; then
+    cat > "$WORKSPACE/AGENTS.md" <<'EOF'
 # Unraid Server Workspace
 
-This workspace manages the Unraid host.
+The local shell belongs to the ChatGPT container, not the Unraid host.
+Run host commands through the existing root SSH alias, for example:
 
-## Host
+```bash
+ssh unraid 'hostname; id; docker ps'
+```
 
-SSH alias:
-
-\`\`\`bash
-ssh unraid
-\`\`\`
-
-Unraid address:
-
-\`\`\`text
-${UNRAID_HOST}
-\`\`\`
-
-The SSH account is root.
-
-## Important execution rule
-
-The ChatGPT Community application itself runs inside a Docker container.
-
-Commands intended for the Unraid server must therefore be executed through SSH.
-
-For example:
-
-\`\`\`bash
-ssh unraid 'docker ps'
-\`\`\`
-
-or:
-
-\`\`\`bash
-ssh unraid 'uname -a'
-\`\`\`
-
-Do not assume the local container shell is the Unraid host.
-
-## Server administration
-
-Root access to the Unraid host is authorized.
-
-Use SSH for:
-
-- Docker management
-- Unraid configuration
-- filesystem administration
-- logs
-- networking
-- processes
-- storage inspection
-- system diagnostics
-- scripts and automation
-
-Inspect the current state before destructive storage, filesystem, boot, network, or Docker operations.
-
-Persistent Unraid configuration lives under /boot/config.
-
-User shares live under /mnt/user.
+Root access is available. Inspect before changing anything. Obtain explicit
+approval before deleting data, formatting storage, changing boot/network/SSH
+configuration, or stopping this container. Never expose tokens or private keys.
+Persistent host configuration: /boot/config. User shares: /mnt/user.
 EOF
+    chown "$APP_USER:$APP_GROUP" "$WORKSPACE/AGENTS.md"
+fi
+chown "$APP_USER:$APP_GROUP" "$WORKSPACE"
 
-chown -R abc:abc "${SSH_DIR}"
-chown -R abc:abc "${WORKSPACE}"
+# Selkies only seeds autostart files on first use. Migrate old Webtop copies
+# explicitly, keeping originals for rollback. Never touch .codex or Codex.
+for wm in labwc openbox; do
+    dir="$CONFIG_DIR/.config/$wm"
+    mkdir -p "$dir"
+    source="$DEFAULTS_DIR/autostart"
+    [ "$wm" != labwc ] || source="$DEFAULTS_DIR/autostart_wayland"
+    if ! cmp -s "$source" "$dir/autostart"; then
+        if [ -e "$dir/autostart" ] && [ ! -e "$BACKUP/$wm-autostart" ]; then
+            cp -p "$dir/autostart" "$BACKUP/$wm-autostart"
+        fi
+        install -m 0755 "$source" "$dir/autostart"
+    fi
+    chown "$APP_USER:$APP_GROUP" "$dir" "$dir/autostart"
+done
+legacy="$CONFIG_DIR/.config/autostart/chatgpt-community.desktop"
+if [ -f "$legacy" ]; then
+    if [ ! -f "$BACKUP/chatgpt-community.desktop" ]; then
+        cp -p "$legacy" "$BACKUP/chatgpt-community.desktop"
+    fi
+    rm -- "$legacy"
+fi
 
-echo "[chatgpt-community] Unraid SSH host: ${UNRAID_HOST}"
-echo "[chatgpt-community] SSH public key:"
-cat "${SSH_KEY}.pub"
+echo '[chatgpt-community] Single-application session configured; existing credentials preserved.'
+echo '[chatgpt-community] SSH public key:'
+cat "$SSH_KEY.pub"
+if [ -z "${PASSWORD:-}" ]; then
+    echo '[chatgpt-community] WARNING: set PASSWORD for WebUI authentication; keep access on LAN/VPN.' >&2
+fi
