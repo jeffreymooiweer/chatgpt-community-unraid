@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ChatGPT Community
+Comment=Start ChatGPT Community
+Exec=/usr/local/bin/start-chatgpt-community
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
