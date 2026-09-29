@@ -17,8 +17,11 @@ test("locates the split visibility asset in official 26.924.50649", () => {
   assert.ok(descriptor.assetMatch(source));
   assert.ok(descriptor.pattern.test("remote-control-connections-visibility-futurehash.js"));
   assert.ok(descriptor.pattern.test("app-initial-previoushash.js"));
-  assert.equal(descriptor.pattern.test("remote-connections-settings-fixture.js"), false);
-  assert.equal(descriptor.pattern.test("unrelated.js"), false);
+  // Filenames may change. Upstream searches all JS assets but only selects
+  // the unique function matching the access-gate contract, not arbitrary JS.
+  const selects = (name, text) => descriptor.pattern.test(name) && descriptor.assetMatch(text);
+  assert.equal(selects("remote-connections-settings-fixture.js", "function settings(){return true}"), false);
+  assert.equal(selects("unrelated.js", "function unrelated(){return true}"), false);
 });
 
 test("rejects missing, ambiguous and changed access gates", () => {
