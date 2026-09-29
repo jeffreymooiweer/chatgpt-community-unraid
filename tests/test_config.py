@@ -29,20 +29,35 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(settings["/config"].text, "/mnt/user/appdata/chatgpt-community")
         self.assertEqual(settings["/dev/dri"].attrib["Type"], "Device")
         self.assertEqual(settings["PASSWORD"].attrib["Mask"], "true")
+        self.assertEqual(settings["PASSWORD"].attrib["Required"], "false")
+        self.assertEqual(settings["PASSWORD"].attrib["Default"], "")
+        self.assertFalse(settings["PASSWORD"].text)
+        self.assertEqual(settings["CUSTOM_USER"].attrib["Required"], "false")
+        self.assertEqual(settings["UNRAID_HOST"].attrib["Default"], "unraid")
+        self.assertEqual(settings["UNRAID_HOST"].text, "unraid")
+        self.assertIn("--hostname=ChatGPT-Community", config.findtext("ExtraParams"))
         self.assertNotIn("/var/run/docker.sock", settings)
 
-    def run_init(self, directory):
+    def run_init(self, directory, password="test-only"):
         env = os.environ | {
             "CHATGPT_CONFIG_DIR": str(directory),
             "CHATGPT_DEFAULTS_DIR": str(ROOT / "root/defaults"),
             "CHATGPT_APP_USER": pwd.getpwuid(os.getuid()).pw_name,
             "CHATGPT_APP_GROUP": grp.getgrgid(os.getgid()).gr_name,
             "UNRAID_HOST": "192.0.2.1",
-            "PASSWORD": "test-only",
+            "PASSWORD": password,
         }
         result = subprocess.run(["bash", str(INIT)], env=env,
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
+        return result
+
+    @unittest.skipUnless(shutil.which("ssh-keygen"), "OpenSSH client is required")
+    def test_optional_webui_password(self):
+        for password in ("", "test-only"):
+            with self.subTest(password_set=bool(password)), tempfile.TemporaryDirectory() as temporary:
+                result = self.run_init(Path(temporary), password=password)
+                self.assertEqual("WebUI login disabled" in result.stderr, not bool(password))
 
     @unittest.skipUnless(shutil.which("ssh-keygen"), "OpenSSH client is required")
     def test_migration_preserves_credentials_and_user_edits(self):

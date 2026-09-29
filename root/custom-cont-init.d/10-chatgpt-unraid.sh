@@ -6,7 +6,7 @@ CONFIG_DIR="${CHATGPT_CONFIG_DIR:-/config}"
 DEFAULTS_DIR="${CHATGPT_DEFAULTS_DIR:-/defaults}"
 APP_USER="${CHATGPT_APP_USER:-abc}"
 APP_GROUP="${CHATGPT_APP_GROUP:-abc}"
-UNRAID_HOST="${UNRAID_HOST:-192.168.1.6}"
+UNRAID_HOST="${UNRAID_HOST:-unraid}"
 [[ "$UNRAID_HOST" =~ ^[a-zA-Z0-9._:-]+$ ]] || {
     echo '[chatgpt-community] Invalid UNRAID_HOST.' >&2
     exit 1
@@ -94,5 +94,5 @@ echo '[chatgpt-community] Single-application session configured; existing creden
 echo '[chatgpt-community] SSH public key:'
 cat "$SSH_KEY.pub"
 if [ -z "${PASSWORD:-}" ]; then
-    echo '[chatgpt-community] WARNING: set PASSWORD for WebUI authentication; keep access on LAN/VPN.' >&2
+    echo '[chatgpt-community] WebUI login disabled (PASSWORD is blank); use a trusted LAN/VPN. Set PASSWORD to enable login.' >&2
 fi

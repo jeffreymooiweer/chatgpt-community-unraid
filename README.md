@@ -43,17 +43,19 @@ An [Unraid container template](unraid/chatgpt-community.xml) is included.
 | --- | --- |
 | `3001/tcp` | Container HTTPS port. Map to an available host port. |
 | `/config` | Persistent storage for settings, credentials, and workspaces. |
-| `PASSWORD` | WebUI password. **Set a strong, unique password.** |
-| `CUSTOM_USER` | WebUI username; defaults to `abc`. |
+| `PASSWORD` | Optional WebUI password. Leave blank for no extra login, or set a strong password to enable it. |
+| `CUSTOM_USER` | Username when WebUI login is enabled; defaults to `abc`. |
 | `PUID` / `PGID` | User/group IDs for access to the persistent folder. |
 | `TZ` | Your timezone. |
 | `/dev/dri` | Optional Intel/AMD GPU device mapping; omit if unavailable. |
-| `UNRAID_HOST` | Host address used when creating the initial SSH configuration. Does not rewrite an existing configuration. |
+| `UNRAID_HOST` | Your server hostname or IP for optional SSH access; defaults to `unraid`. Used only for a new SSH configuration. |
 
 Use `--shm-size=1g`. Privileged mode and Docker socket access are not required.
 
-The WebUI login is separate from your application account. HTTPS uses a
-self-signed certificate by default.
+The template leaves the WebUI password blank by default. This only removes the
+extra browser login; your application account login remains unchanged. Existing
+installations keep their configured password until it is cleared in their
+container settings. HTTPS uses a self-signed certificate by default.
 
 GPU acceleration is optional and helps stream the interface—not run cloud AI
 models locally. Without a GPU mapping, CPU rendering is available. If you
@@ -80,6 +82,7 @@ container interrupts active sessions.
 ## Security and experimental features
 
 - Keep the WebUI on a trusted LAN or VPN; do not expose it directly to the internet.
+- Without a WebUI password, anyone who can reach its port can use your logged-in application and its connected tools.
 - Protect `/config` and its backups: they can contain credentials and private keys.
 - SSH keys are generated on first use, but host access is **not automatically authorized**. Authorizing the supplied root SSH configuration grants full host control.
 - The application uses `--no-sandbox`, disabling Chromium's internal sandbox. Agent approval settings remain separate; do not treat the container as a strong security boundary.
