@@ -4,12 +4,12 @@ Run [ChatGPT Community for Linux](https://github.com/ilysenko/codex-desktop-linu
 on your Docker server and use the app from your browser—without a full remote desktop.
 
 **Credit for ChatGPT Community belongs to its upstream authors and contributors.**
-This repository provides only Docker packaging, an automated build workflow, and
-an optional Unraid template. It does not develop the upstream application.
+This repository provides Docker packaging and an automated build workflow.
+It does not develop the upstream application.
 
-> Unofficial community project, not affiliated with OpenAI, Unraid, or
-> LinuxServer.io. This is not a local AI model. Online features require an
-> internet connection and an eligible account; account limits still apply.
+> Unofficial community project, not affiliated with OpenAI or LinuxServer.io.
+> This is not a local AI model. Online features require an internet connection
+> and an eligible account; account limits still apply.
 
 ## Docker image
 
@@ -17,12 +17,14 @@ an optional Unraid template. It does not develop the upstream application.
 ghcr.io/jeffreymooiweer/chatgpt-community-unraid:latest
 ```
 
-**Architecture:** `linux/amd64` (64-bit Intel/AMD). Docker is required;
-Unraid, a GPU, and host SSH access are not.
+**Architecture:** `linux/amd64` (64-bit Intel/AMD). GPU acceleration and host SSH
+access are optional.
 
 [Image tags](https://github.com/jeffreymooiweer/chatgpt-community-unraid/pkgs/container/chatgpt-community-unraid)
 · [Build status](https://github.com/jeffreymooiweer/chatgpt-community-unraid/actions/workflows/build.yml)
 · [Report an issue](https://github.com/jeffreymooiweer/chatgpt-community-unraid/issues)
+
+An [Unraid template](unraid/chatgpt-community.xml) is also available.
 
 ## Choose your access level
 
@@ -140,15 +142,6 @@ are preserved. `ENABLE_HOST_SSH=false` skips automatic setup; it does **not**
 revoke a previously authorized connection. Existing SSH configs are not
 rewritten when environment variables change.
 
-## Unraid
-
-An [Unraid template](unraid/chatgpt-community.xml) provides convenient defaults
-for the same Docker image. Standard mode needs only the usual appdata and WebUI
-settings. Its optional shared-folder field defaults to read-only; leave it blank
-for app-only use. SSH settings are in Advanced View. For Intel/AMD GPU support,
-add a Device mapping for `/dev/dri` only if it exists on your host. Normal use
-needs no Unraid host address. Unraid is not a dependency of the image.
-
 ## Updates and troubleshooting
 
 The workflow checks upstream every six hours and runs a weekly refresh. Only
@@ -191,5 +184,5 @@ upstream and account availability.
 - **OpenAI** — the underlying application, AI services, and associated assets.
 - **[LinuxServer.io Selkies](https://docs.linuxserver.io/selkies/)** — the browser-streaming foundation.
 
-This repository contributes Docker packaging and Unraid integration only.
+This repository contributes Docker packaging only.
 Third-party software and assets retain their respective licenses and terms.
