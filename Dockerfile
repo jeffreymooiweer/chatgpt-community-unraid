@@ -52,6 +52,7 @@ FROM ghcr.io/linuxserver/baseimage-selkies:debiantrixie
 # Single-application session. No XFCE, desktop shell, taskbar or start menu.
 # AUTO_GPU selects rendering and encoding devices when /dev/dri is passed in.
 ENV TITLE="ChatGPT Community" \
+    ENABLE_HOST_SSH=false \
     PIXELFLUX_WAYLAND=true \
     AUTO_GPU=true \
     SELKIES_DESKTOP=false \
