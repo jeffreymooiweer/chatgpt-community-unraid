@@ -115,6 +115,13 @@ publish the **tested image** to `:latest` plus a unique `build-...` rollback tag
 The recorded upstream state advances only after successful publication, so a
 failed candidate is retried on the next scheduled check.
 
+A narrow build-time compatibility patch allows the Remote Mobile Control
+visibility patch to find both the original app-initial bundle and the separate
+remote-control-connections-visibility bundle introduced in 26.924.50649.
+Regression tests check asset selection, repeat application, non-Linux behavior,
+and preservation of the accessRequired restriction. The upstream feature tests
+and critical-patch enforcement still run before an image can be published.
+
 Tests do not sign in to an OpenAI account, exercise Remote enrollment, access
 Unraid or verify Intel hardware. Those require the real installation. Build logs
 are retained as Actions artifacts for seven days.

@@ -22,6 +22,18 @@ RUN git init . \
     && git fetch --depth=1 origin "${WRAPPER_SHA}" \
     && git checkout --detach FETCH_HEAD
 
+COPY patches/remote-control-visibility.patch /tmp/unraid-patches/remote-control-visibility.patch
+COPY tests/remote-control-visibility.test.cjs /tmp/unraid-tests/remote-control-visibility.test.cjs
+# The official app split this unchanged function out of app-initial in 26.924.50649.
+# Keep upstream's unique-function and accessRequired checks and critical-patch gate.
+RUN if git apply --check /tmp/unraid-patches/remote-control-visibility.patch; then \
+        git apply /tmp/unraid-patches/remote-control-visibility.patch; \
+    else \
+        git apply --reverse --check /tmp/unraid-patches/remote-control-visibility.patch; \
+    fi \
+    && UPSTREAM_SOURCE=/src node --test /tmp/unraid-tests/remote-control-visibility.test.cjs \
+    && node --test linux-features/remote-mobile-control/test.js
+
 RUN printf '%s\n' '{"enabled":["remote-mobile-control"]}' \
     > linux-features/features.json
 
