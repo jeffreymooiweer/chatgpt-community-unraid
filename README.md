@@ -3,6 +3,10 @@
 Run [ChatGPT Community for Linux](https://github.com/ilysenko/codex-desktop-linux)
 in Docker and access it from your browser.
 
+**Credit for ChatGPT Community belongs to its upstream authors and contributors.**
+This repository only provides the Docker packaging and Unraid integration;
+it does not develop the ChatGPT Community application.
+
 A single-app experience with no full desktop, taskbar, or start menu. The
 application runs inside the container; your browser displays its interface.
 
@@ -85,9 +89,11 @@ and account availability. See the [upstream feature documentation](https://githu
 
 ## Credits
 
-- [ChatGPT Community for Linux](https://github.com/ilysenko/codex-desktop-linux) — upstream application wrapper.
-- [LinuxServer.io Selkies](https://docs.linuxserver.io/selkies/) — browser-based application streaming.
+- **[ChatGPT Community for Linux](https://github.com/ilysenko/codex-desktop-linux)** — credit to the upstream authors and contributors for the community application distribution and its Linux adaptations.
+- **OpenAI** — the underlying application, AI services, and associated assets.
+- **[LinuxServer.io Selkies](https://docs.linuxserver.io/selkies/)** — the browser-streaming foundation.
 
-This repository provides the Docker packaging, build workflow, and Unraid
-template. Third-party software and assets remain subject to their respective
-licenses and terms.
+The contribution of this repository is limited to the Docker image, its build
+workflow, and the Unraid template/integration. No authorship of the upstream
+application is claimed. Third-party software and assets remain subject to their
+respective licenses and terms.
